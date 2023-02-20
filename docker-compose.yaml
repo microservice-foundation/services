@@ -1,21 +1,21 @@
 version: "3.9"
 services:
   service-registry:
-    image: service-discovery-service:1.1
+    image: service-discovery-service:${TAG}
     hostname: service-registry
     container_name: service-registry
     restart: always
     ports:
-      - "8770:8770"
+      - "${SERVICE_REGISTERY_PORT}:${SERVICE_REGISTERY_PORT}"
       - "8000:8001"
     environment:
-      SERVER_PORT: 8770
+      SERVER_PORT: ${SERVICE_REGISTERY_PORT}
       MICROSERVICE_NAME: service-registry
     networks:
       - microservice-network
 
   configurator:
-    image: configuration-service:1.1
+    image: configuration-service:${TAG}
     hostname: configurator
     container_name: configurator
     restart: always
@@ -44,7 +44,7 @@ services:
       - microservice-network
 
   song-service:
-    image: song-service:1.1
+    image: song-service:${TAG}
     hostname: song-service
     container_name: song-service
     restart: always
@@ -56,12 +56,12 @@ services:
       - "db"
     environment:
       MICROSERVICE_NAME: song-service
-      EUREKA_HOST: http://service-registry:8770
+      EUREKA_HOST: http://service-registry:${SERVICE_REGISTERY_PORT}
       CONFIGURATION_SERVER_NAME: configurator
       POSTGRES_HOST: db
-      POSTGRES_USERNAME: microservice
-      POSTGRES_PASSWORD: microservice
-      DATABASE_NAME: microservice
+      POSTGRES_USERNAME: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_NAME: ${POSTGRES_DB}
     networks:
       - microservice-network
 
@@ -146,7 +146,7 @@ services:
       - microservice-network
 
   resource-service:
-    image: resource-service:1.1
+    image: resource-service:${TAG}
     hostname: resource-service
     container_name: resource-service
     restart: always
@@ -162,12 +162,12 @@ services:
       - "8003:8001"
     environment:
       MICROSERVICE_NAME: resource-service
-      EUREKA_HOST: http://service-registry:8770
+      EUREKA_HOST: http://service-registry:${SERVICE_REGISTERY_PORT}
       CONFIGURATION_SERVER_NAME: configurator
       POSTGRES_HOST: db
-      POSTGRES_USERNAME: microservice
-      POSTGRES_PASSWORD: microservice
-      DATABASE_NAME: microservice
+      POSTGRES_USERNAME: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_NAME: ${POSTGRES_DB}
       KAFKA_BOOTSTRAP_SERVERS_ENDPOINTS: kafka1:29092,kafka2:29093,kafka3:29094
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
@@ -185,7 +185,7 @@ services:
       - microservice-network
 
   api-gateway:
-    image: api-gateway-service:1.1
+    image: api-gateway-service:${TAG}
     hostname: api-gateway
     container_name: api-gateway
     depends_on: 
@@ -196,11 +196,12 @@ services:
     restart: always
     ports:
       - "8004:8001"
-      - "8771:8771"
+      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
     environment:
       MICROSERVICE_NAME: api-gateway
-      EUREKA_HOST: http://service-registry:8770
+      EUREKA_HOST: http://service-registry:${SERVICE_REGISTERY_PORT}
       CONFIGURATION_SERVER_NAME: configurator
+      SERVER_PORT: ${API_GATEWAY_PORT}
       SONG_SERVICE_NAME: song-service
       RESOURCE_SERVICE_NAME: resource-service
       REDIS_HOST: redis
@@ -208,7 +209,7 @@ services:
       - microservice-network
 
   resource-processor-service:
-    image: resource-processor-service:1.1
+    image: resource-processor-service:${TAG}
     hostname: resource-processor-service
     container_name: resource-processor-service
     restart: always
@@ -222,7 +223,7 @@ services:
       - "8005:8001"
     environment:
       MICROSERVICE_NAME: resource-processor
-      EUREKA_HOST: http://service-registry:8770
+      EUREKA_HOST: http://service-registry:${SERVICE_REGISTERY_PORT}
       API_GATEWAY_SERVICE_NAME: api-gateway
       KAFKA_BOOTSTRAP_SERVERS_ENDPOINTS: kafka1:29092,kafka2:29093,kafka3:29094
       CONFIGURATION_SERVER_NAME: configurator

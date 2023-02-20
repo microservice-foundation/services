@@ -10,8 +10,14 @@ export AWS_SECRET_ACCESS_KEY = your secret access key
 ```
 
 ### Start microservices
+
+- Run development environment:
 ```
-docker-compose -f docker-compose.yaml up
+docker-compose -f docker-compose.yaml --env-file ./config/.env.dev up
+```
+- Run production environment:
+```
+docker-compose -f docker-compose.yaml --env-file ./config/.env.prod up
 ```
 
 ### Examples
