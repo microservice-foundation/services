@@ -1,0 +1,21 @@
+[submodule "service-discovery-service"]
+	path = service-discovery-service
+	url = git@github.com:microservice-foundation/service-discovery-service.git
+[submodule "resource-service"]
+	path = resource-service
+	url = git@github.com:microservice-foundation/resource-service.git
+[submodule "resource-processor-service"]
+	path = resource-processor-service
+	url = git@github.com:microservice-foundation/resource-processor-service.git
+[submodule "configuration-service"]
+	path = configuration-service
+	url = git@github.com:microservice-foundation/configuration-service.git
+[submodule "api-gateway-service"]
+	path = api-gateway-service
+	url = git@github.com:microservice-foundation/api-gateway-service.git
+[submodule "song-service"]
+	path = song-service
+	url = git@github.com:microservice-foundation/song-service.git
+[submodule "services-configurations-store"]
+	path = services-configurations-store
+	url = git@github.com:microservice-foundation/services-configurations-store.git

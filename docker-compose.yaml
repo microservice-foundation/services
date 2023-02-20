@@ -1,0 +1,238 @@
+version: "3.9"
+services:
+  service-registry:
+    image: service-discovery-service:1.1
+    hostname: service-registry
+    container_name: service-registry
+    restart: always
+    ports:
+      - "8770:8770"
+      - "8000:8001"
+    environment:
+      SERVER_PORT: 8770
+      MICROSERVICE_NAME: service-registry
+    networks:
+      - microservice-network
+
+  configurator:
+    image: configuration-service:1.1
+    hostname: configurator
+    container_name: configurator
+    restart: always
+    ports:
+      - "8001:8001" 
+    depends_on: 
+      - "service-registry"
+    environment:
+      EUREKA_HOST: http://service-registry:8770
+      MICROSERVICE_NAME: configurator
+    networks:
+      - microservice-network
+
+  db:
+    image: postgres:latest
+    hostname: db
+    container_name: db
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: microservice
+      POSTGRES_USER: microservice
+      POSTGRES_DB: microservice
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - microservice-network
+
+  song-service:
+    image: song-service:1.1
+    hostname: song-service
+    container_name: song-service
+    restart: always
+    ports:
+      - "8002:8001" 
+    depends_on:
+      - "service-registry"
+      - "configurator"
+      - "db"
+    environment:
+      MICROSERVICE_NAME: song-service
+      EUREKA_HOST: http://service-registry:8770
+      CONFIGURATION_SERVER_NAME: configurator
+      POSTGRES_HOST: db
+      POSTGRES_USERNAME: microservice
+      POSTGRES_PASSWORD: microservice
+      DATABASE_NAME: microservice
+    networks:
+      - microservice-network
+
+  zoo1:
+    image: confluentinc/cp-zookeeper:7.3.0
+    hostname: zoo1
+    container_name: zoo1
+    restart: always
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_SERVERS: zoo1:2888:3888
+    networks:
+      - microservice-network
+
+  kafka1:
+    image: confluentinc/cp-kafka:7.3.0
+    hostname: kafka1
+    container_name: kafka1
+    restart: always
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+    depends_on:
+      - zoo1
+    networks:
+      - microservice-network
+
+  kafka2:
+    image: confluentinc/cp-kafka:7.3.0
+    hostname: kafka2
+    container_name: kafka2
+    restart: always
+    ports:
+      - "9093:9093"
+      - "29093:29093"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka2:19093,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9093,DOCKER://host.docker.internal:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      KAFKA_BROKER_ID: 2
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+    depends_on:
+      - zoo1
+    networks:
+      - microservice-network
+
+  kafka3:
+    image: confluentinc/cp-kafka:7.3.0
+    hostname: kafka3
+    container_name: kafka3
+    restart: always
+    ports:
+      - "9094:9094"
+      - "29094:29094"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka3:19094,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9094,DOCKER://host.docker.internal:29094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      KAFKA_BROKER_ID: 3
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+    depends_on:
+      - zoo1
+    networks:
+      - microservice-network
+
+  resource-service:
+    image: resource-service:1.1
+    hostname: resource-service
+    container_name: resource-service
+    restart: always
+    depends_on:
+      - "service-registry"
+      - "configurator"
+      - "db"
+      - "zoo1"
+      - "kafka1"
+      - "kafka2"
+      - "kafka3"
+    ports:
+      - "8003:8001"
+    environment:
+      MICROSERVICE_NAME: resource-service
+      EUREKA_HOST: http://service-registry:8770
+      CONFIGURATION_SERVER_NAME: configurator
+      POSTGRES_HOST: db
+      POSTGRES_USERNAME: microservice
+      POSTGRES_PASSWORD: microservice
+      DATABASE_NAME: microservice
+      KAFKA_BOOTSTRAP_SERVERS_ENDPOINTS: kafka1:29092,kafka2:29093,kafka3:29094
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+    networks:
+      - microservice-network
+
+  redis:
+    image: redis:latest
+    hostname: redis
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - microservice-network
+
+  api-gateway:
+    image: api-gateway-service:1.1
+    hostname: api-gateway
+    container_name: api-gateway
+    depends_on: 
+      - "service-registry"
+      - "configurator"
+      - "resource-service"
+      - "song-service"
+    restart: always
+    ports:
+      - "8004:8001"
+      - "8771:8771"
+    environment:
+      MICROSERVICE_NAME: api-gateway
+      EUREKA_HOST: http://service-registry:8770
+      CONFIGURATION_SERVER_NAME: configurator
+      SONG_SERVICE_NAME: song-service
+      RESOURCE_SERVICE_NAME: resource-service
+      REDIS_HOST: redis
+    networks:
+      - microservice-network
+
+  resource-processor-service:
+    image: resource-processor-service:1.1
+    hostname: resource-processor-service
+    container_name: resource-processor-service
+    restart: always
+    depends_on:
+      - "api-gateway"
+      - "zoo1"
+      - "kafka1"
+      - "kafka2"
+      - "kafka3"
+    ports:
+      - "8005:8001"
+    environment:
+      MICROSERVICE_NAME: resource-processor
+      EUREKA_HOST: http://service-registry:8770
+      API_GATEWAY_SERVICE_NAME: api-gateway
+      KAFKA_BOOTSTRAP_SERVERS_ENDPOINTS: kafka1:29092,kafka2:29093,kafka3:29094
+      CONFIGURATION_SERVER_NAME: configurator
+    networks:
+      - microservice-network
+
+volumes:
+  postgres_data:
+
+networks:
+  microservice-network:
+    driver: bridge
+
